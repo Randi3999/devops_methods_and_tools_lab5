@@ -1,0 +1,25 @@
+- name: nginx-lab4
+  hosts: local
+  become: true
+
+  tasks:
+    - name: Check install nmap
+      command: pacman -Q nmap
+      register: nmap_check
+      failed_when: false
+      changed_when: false
+    - name: Install nmap (if he dont install)
+      community.general.pacman:
+        name: nmap
+        state: latest
+        update_cache: yes
+      when: nmap_check.rc != 0
+
+    - name: Scan with nmap
+      ansible.builtin.command: "nmap {{ item }} -p 80 -oG -"
+      loop: "{{ lookup('file', './targets.txt').splitlines() }}"
+      register: scan_results
+    - name: Scan results
+      ansible.builtin.debug:
+        msg: "{{ item.stdout_lines }}"
+      loop: "{{ scan_results.results }}"
